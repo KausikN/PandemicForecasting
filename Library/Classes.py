@@ -9,12 +9,12 @@ class Disease:
         self.parameters = parameters                                    # Parameters of the disease
 
 class DiseaseParameters:
-    def __init__(self, spreading_factor, severity, lethality, spreading_mode):
+    def __init__(self, spreading_factor, severity, lethality, spreading_mode,rnaught):
         self.spreading_factor = spreading_factor                        # Factor based on which it spreads
         self.severity = severity                                        # Severity
         self.lethality = lethality                                      # Lethality
         self.spreading_mode = spreading_mode                            # Mode of spreading
-
+        self.rnaught = rnaught
 # Location Classes
 class Location:
     def __init__(self, name, parameters):
