@@ -12,7 +12,7 @@ class DiseaseParameters:
     def __init__(self, spread_mode, severity, lethality, spreading_mode):
         self.spread_mode = spread_mode                                  # Mode and parameters of spreading
         self.severity = severity                                        # Severity
-        self.lethality = lethality                                      # Lethality
+        self.lethality = lethality                                      # Lethality - % of deaths per day due to disease
         self.spreading_mode = spreading_mode                            # Mode of spreading
 
 class SpreadMode:
@@ -60,8 +60,10 @@ class ClimateParameters:
 
 # People Parameters
 class PeopleParameters:
-    def __init__(self, population, people_demography=None):
+    def __init__(self, population, birth_rate, death_rate, people_demography=None):
         self.population = population                                    # No of people living
+        self.birth_rate = birth_rate                                    # Birth rate - no of births per day
+        self.death_rate = death_rate                                    # Death rate - no of natural causes deaths per day
         self.people_demography = people_demography                      # Splitup of the population - based on gender, access to medicines, etc
 
 # Medical Parameters
@@ -88,13 +90,55 @@ class SimulationParameters:
         self.UpdatePopulationData()                                       # Update the population data
 
     def UpdatePopulationData(self):
-        self.a = 1
+        # To get global population, goto every location and add up all their populations
+        for location in self.locations:
+            self.global_population.living += location.parameters.people_parameters.population.living
+            self.global_population.dead += location.parameters.people_parameters.population.dead
+            self.global_population.affected += location.parameters.people_parameters.population.affected
+            self.global_population.unaffected += location.parameters.people_parameters.population.unaffected
+            self.global_population.recovered += location.parameters.people_parameters.population.recovered
+
+    def NextDay(self):
+        # First update populations due to birth and death rates
+        for i in range(len(self.locations)):
+            ppl = self.locations[i].parameters.people_parameters
+            new_births = int(ppl.population.living * ppl.birth_rate)
+            new_deaths = int(ppl.population.living * ppl.death_rate)
+            affected_change = -1 * new_deaths * (ppl.population.affected / ppl.population.living) # Assuming no new born can be affected
+            unaffected_change = new_births - new_deaths * (ppl.population.unaffected / ppl.population.living)
+            recovered_change = -1 * new_deaths * (ppl.population.recovered / ppl.population.living) # Assuming no new born can immediately be recovered
+            if ((ppl.population.living + new_births - new_deaths) < 0): # If all dead
+                self.locations[i].parameters.people_parameters.population.dead += ppl.population.living
+                self.locations[i].parameters.people_parameters.population.living = 0
+                self.locations[i].parameters.people_parameters.population.affected = 0
+                self.locations[i].parameters.people_parameters.population.unaffected = 0
+                self.locations[i].parameters.people_parameters.population.recovered = 0
+            else:
+                self.locations[i].parameters.people_parameters.population.living += new_births - new_deaths
+                self.locations[i].parameters.people_parameters.population.dead += new_deaths
+                self.locations[i].parameters.people_parameters.population.unaffected += unaffected_change
+                self.locations[i].parameters.people_parameters.population.affected += affected_change
+                self.locations[i].parameters.people_parameters.population.recovered += recovered_change
+
+        # Next Address Spread Within the Location
+        # Update deaths due to disease
+        for i in range(len(self.locations)):
+            death_count = int(self.disease.parameters.lethality * self.locations[i].parameters.people_parameters.population.affected)
+            self.locations[i].parameters.people_parameters.population.affected -= death_count
+            self.locations[i].parameters.people_parameters.population.dead += death_count
+            self.locations[i].parameters.people_parameters.population.living -= death_count
+
+            # Using Spread Function get change from unaffected to affected and from recovered to affected
+            unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(self.disease.parameters.spread_mode.spread_parameters, self.locations[i].parameters.people_parameters.population, connect=False)
+
+
+
 
 # Population
 class Population:
     def __init__(self):
-        self.living = None
-        self.dead = None
-        self.affected = None
-        self.unaffected = None
-        self.recovered = None
+        self.living = 0
+        self.dead = 0
+        self.affected = 0
+        self.unaffected = 0
+        self.recovered = 0
