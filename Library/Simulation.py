@@ -12,16 +12,25 @@ from tqdm import tqdm
 def SimulateSpread(sim, progress=False, verbose=True):
     sim.UpdatePopulationData()
     global_pop_history = []
+    loc_pop_history = []
+
+    # Initial
     global_pop_history.append(sim.global_population)
+    for li in range(len(sim.locations)):
+        loc_pop_history.append([sim.locations[li].parameters.people_parameters.population])
 
     if progress:
         for day in tqdm(range(sim.max_days)):
             sim.nextDay()
             global_pop_history.append(sim.global_population)
+            for li in range(len(sim.locations)):
+                loc_pop_history[li].append(sim.locations[li].parameters.people_parameters.population)
     else:
         for day in range(sim.max_days):
             sim.nextDay()
             global_pop_history.append(sim.global_population)
+            for li in range(len(sim.locations)):
+                loc_pop_history[li].append(sim.locations[li].parameters.people_parameters.population)
 
     if verbose:
         for day in range(len(global_pop_history)):
@@ -29,7 +38,7 @@ def SimulateSpread(sim, progress=False, verbose=True):
             sim.global_population.print()
             print("\n")
 
-    return global_pop_history
+    return global_pop_history, loc_pop_history
 
 # Spread Functions
 class SpreadParameters_Exponential:
@@ -89,6 +98,9 @@ def transport_spread_function(spread_parameters, pop1, pop2, con):
 
     return popchange_loc1, popchange_loc2
 
+# Util Functions
+
+
 # Plot Functions
 def PlotPopulationHistory(history):
     # Plot
@@ -126,6 +138,49 @@ def PlotPopulationHistory(history):
 
     plt.show()
 
+def PlotLocPopulationHistory(loc_history):
+    history_living = []
+    history_affected = []
+    history_unaffected = []
+    history_recovered = []
+    history_dead = []
+    for i in range(len(loc_history)):
+        history_living.append([])
+        history_affected.append([])
+        history_unaffected.append([])
+        history_recovered.append([])
+        history_dead.append([])
+        for pop in loc_history[i]:
+            history_living[i].append(pop.living)
+            history_affected[i].append(pop.affected)
+            history_unaffected[i].append(pop.unaffected)
+            history_recovered[i].append(pop.recovered)
+            history_dead[i].append(pop.dead)
+
+    for i in range(len(loc_history)):
+        ax = plt.subplot(len(loc_history)*2, 5, 1 + 5*i*2)
+        ax.set_ylabel("Living")
+        plt.plot(range(1, len(history_living[i])+1), history_living[i])
+
+        ax = plt.subplot(len(loc_history)*2, 5, 2 + 5*i*2)
+        ax.set_ylabel("Affected")
+        plt.plot(range(1, len(history_affected[i])+1), history_affected[i])
+
+        ax = plt.subplot(len(loc_history)*2, 5, 3 + 5*i*2)
+        ax.title.set_text("Loc " + str(i+1))
+        ax.set_ylabel("unaffected")
+        plt.plot(range(1, len(history_unaffected[i])+1), history_unaffected[i])
+
+        ax = plt.subplot(len(loc_history)*2, 5, 4 + 5*i*2)
+        ax.set_ylabel("Recovered")
+        plt.plot(range(1, len(history_recovered[i])+1), history_recovered[i])
+
+        ax = plt.subplot(len(loc_history)*2, 5, 5 + 5*i*2)
+        ax.set_ylabel("Dead")
+        plt.plot(range(1, len(history_dead[i])+1), history_dead[i])
+    
+    plt.show()
+
 # Driver Code
 # Disease
 # Params
@@ -147,7 +202,7 @@ birth_rate = 0.1
 death_rate = 0.025
 
 pop1 = Population()
-pop1.living = 100
+pop1.living = 10000
 pop1.affected = 1
 pop1.unaffected = pop1.living - pop1.affected
 loc1_people_params = PeopleParameters(pop1, birth_rate, death_rate)
@@ -160,7 +215,7 @@ birth_rate = 0.2
 death_rate = 0.1
 
 pop2 = Population()
-pop2.living = 50
+pop2.living = 5000
 pop2.affected = 1
 pop2.unaffected = pop2.living - pop2.affected
 loc2_people_params = PeopleParameters(pop2, birth_rate, death_rate)
@@ -170,7 +225,7 @@ loc2 = Location("loc 2", loc2_params)
 # Connection 1 - 2
 connect_type = "Air"
 screening_factor = 0.1
-travel_rates = [0.2, 0.35]
+travel_rates = [0.25, 0.1]
 connectivity_parameters = ConnectivityParameters(connect_type, screening_factor=screening_factor)
 connection_1_2 = Connection(loc1, loc2, connectivity_parameters, travel_rates)
 
@@ -184,5 +239,6 @@ connection_matrix = [   [None               , connection_1_2],
                     ]
 sim = SimulationParameters(disease, locations, connection_matrix, max_days)
 
-history = SimulateSpread(sim, progress=progressBar, verbose=verbose)
-PlotPopulationHistory(history)
+global_history, loc_history = SimulateSpread(sim, progress=progressBar, verbose=verbose)
+PlotPopulationHistory(global_history)
+PlotLocPopulationHistory(loc_history)
