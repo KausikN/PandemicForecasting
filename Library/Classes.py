@@ -16,10 +16,10 @@ class DiseaseParameters:
         self.spreading_mode = spreading_mode                            # Mode of spreading
 
 class SpreadMode:
-    def __init__(self, spread_parameters, spread_function):
+    def __init__(self, spread_parameters, spread_function, transport_spread_function):
         self.spread_parameters = spread_parameters                      # Custom Parameters for the spread function - changes for different functions
         self.spread_function = spread_function                          # Custom function defining how disease spreads - input must be 
-
+        self.transport_spread_function = transport_spread_function      # Custom function defining how disease spreads via transport
 
 # Location Classes
 class Location:
@@ -80,10 +80,10 @@ class Hospital:
 # Simulation Parameters
 class SimulationParameters:
     # Functions
-    def __init__(self, disease, locations, connection_graph, max_days=10):
+    def __init__(self, disease, locations, connection_matrix, max_days=10):
         self.disease = disease                                            # Disease to simulate
         self.locations = locations                                        # Array of all locations
-        self.connection_graph = connection_graph                          # Graph of connections between locations
+        self.connection_matrix = connection_matrix                        # Matrix of connections between locations
         self.max_days = max_days                                          # Max number of days to simulate
         self.global_population = Population()                             # Global Population Init
 
@@ -129,7 +129,35 @@ class SimulationParameters:
             self.locations[i].parameters.people_parameters.population.living -= death_count
 
             # Using Spread Function get change from unaffected to affected and from recovered to affected
-            unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(self.disease.parameters.spread_mode.spread_parameters, self.locations[i].parameters.people_parameters.population, connect=False)
+            unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(
+                self.disease.parameters.spread_mode.spread_parameters,
+                self.locations[i].parameters.people_parameters.population,
+                connect=False)
+            self.locations[i].parameters.people_parameters.population.affected += unaffected_to_affected + recovered_to_affected
+            self.locations[i].parameters.people_parameters.population.unaffected -= unaffected_to_affected
+            self.locations[i].parameters.people_parameters.population.recovered -= recovered_to_affected
+        
+        # Calculate how many people leave and come into via transport using transport spread function of disease
+        for i in range(len(self.locations)):
+            for j in range(i+1, len(self.locations)):
+                con = self.connection_matrix[i][j]
+                if not con == None:
+                    popchange_loc1, popchange_loc2 = self.disease.parameters.spread_mode.transport_spread_function(
+                        self.disease.parameters.spread_mode.spread_parameters,
+                        self.locations[i].parameters.people_parameters.population,
+                        self.locations[j].parameters.people_parameters.population,
+                        con)
+                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.living
+                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.affected
+                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.unaffected
+                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.dead
+                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.recovered
+
+                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.living
+                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.affected
+                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.unaffected
+                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.dead
+                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.recovered
 
 
 
