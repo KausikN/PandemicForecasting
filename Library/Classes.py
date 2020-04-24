@@ -4,16 +4,15 @@ This contains all the classes used
 
 # Disease Classes
 class Disease:
-    def __init__(self, name, parameters):
+    def __init__(self, name, parameters=None):
         self.name = name                                                # Name of the disease
         self.parameters = parameters                                    # Parameters of the disease
 
 class DiseaseParameters:
-    def __init__(self, spread_mode, severity, lethality, spreading_mode):
+    def __init__(self, spread_mode=None, severity=0.0, lethality=0.0):
         self.spread_mode = spread_mode                                  # Mode and parameters of spreading
         self.severity = severity                                        # Severity
         self.lethality = lethality                                      # Lethality - % of deaths per day due to disease
-        self.spreading_mode = spreading_mode                            # Mode of spreading
 
 class SpreadMode:
     def __init__(self, spread_parameters, spread_function, transport_spread_function):
@@ -38,12 +37,16 @@ class LocationParameters:
 # Connection Classes
 # Connects 2 Locations
 class Connection:
-    def __init__(self, loc1, loc2, distance, connectivity_parameters, travel_rate):
+    def __init__(self, loc1, loc2, connectivity_parameters, travel_rates):
         self.loc1 = loc1                                                # Location 1 of the connection
         self.loc2 = loc2                                                # Location 2 of the connection
-        self.distance = distance                                        # Distance between the 2 locations
+        self.distance = self.getDistance(loc1.parameters.center_point, loc2.parameters.center_point) # Distance between the 2 locations
         self.connectivity_parameters = connectivity_parameters          # Parameters of the connectivity
-        self.travel_rate = travel_rate                                  # TravelRate - How many people travel every day
+        self.travel_rate_1_to_2 = travel_rates[0]                       # TravelRate - How many people travel every day from 1 to 2
+        self.travel_rate_2_to_1 = travel_rates[1]                       # TravelRate - How many people travel every day from 2 to 1
+
+    def getDistance(self, p1, p2):
+        return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) ** (0.5)
 
 class ConnectivityParameters:
     def __init__(self, connect_type, spreading_factor=None, screening_factor=None):
@@ -91,14 +94,17 @@ class SimulationParameters:
 
     def UpdatePopulationData(self):
         # To get global population, goto every location and add up all their populations
+        self.global_population = Population()
         for location in self.locations:
-            self.global_population.living += location.parameters.people_parameters.population.living
             self.global_population.dead += location.parameters.people_parameters.population.dead
             self.global_population.affected += location.parameters.people_parameters.population.affected
             self.global_population.unaffected += location.parameters.people_parameters.population.unaffected
             self.global_population.recovered += location.parameters.people_parameters.population.recovered
+            # self.global_population.print()
+            # print("\n")
+        self.global_population.living = self.global_population.affected + self.global_population.unaffected + self.global_population.recovered
 
-    def NextDay(self):
+    def nextDay(self):
         # First update populations due to birth and death rates
         for i in range(len(self.locations)):
             ppl = self.locations[i].parameters.people_parameters
@@ -114,52 +120,64 @@ class SimulationParameters:
                 self.locations[i].parameters.people_parameters.population.unaffected = 0
                 self.locations[i].parameters.people_parameters.population.recovered = 0
             else:
-                self.locations[i].parameters.people_parameters.population.living += new_births - new_deaths
-                self.locations[i].parameters.people_parameters.population.dead += new_deaths
-                self.locations[i].parameters.people_parameters.population.unaffected += unaffected_change
-                self.locations[i].parameters.people_parameters.population.affected += affected_change
-                self.locations[i].parameters.people_parameters.population.recovered += recovered_change
+                self.locations[i].parameters.people_parameters.population.dead += int(new_deaths)
+                self.locations[i].parameters.people_parameters.population.unaffected += int(unaffected_change)
+                self.locations[i].parameters.people_parameters.population.affected += int(affected_change)
+                self.locations[i].parameters.people_parameters.population.recovered += int(recovered_change)
+                self.locations[i].parameters.people_parameters.population.living = self.locations[i].parameters.people_parameters.population.unaffected + self.locations[i].parameters.people_parameters.population.affected + self.locations[i].parameters.people_parameters.population.recovered
 
         # Next Address Spread Within the Location
-        # Update deaths due to disease
-        for i in range(len(self.locations)):
-            death_count = int(self.disease.parameters.lethality * self.locations[i].parameters.people_parameters.population.affected)
-            self.locations[i].parameters.people_parameters.population.affected -= death_count
-            self.locations[i].parameters.people_parameters.population.dead += death_count
-            self.locations[i].parameters.people_parameters.population.living -= death_count
+        if not self.disease.parameters.spread_mode.spread_function == None:
+            # Update deaths due to disease
+            for i in range(len(self.locations)):
+                death_count = int(self.disease.parameters.lethality * self.locations[i].parameters.people_parameters.population.affected)
+                self.locations[i].parameters.people_parameters.population.affected -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.living -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.dead += int(death_count)
 
-            # Using Spread Function get change from unaffected to affected and from recovered to affected
-            unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(
-                self.disease.parameters.spread_mode.spread_parameters,
-                self.locations[i].parameters.people_parameters.population,
-                connect=False)
-            self.locations[i].parameters.people_parameters.population.affected += unaffected_to_affected + recovered_to_affected
-            self.locations[i].parameters.people_parameters.population.unaffected -= unaffected_to_affected
-            self.locations[i].parameters.people_parameters.population.recovered -= recovered_to_affected
+                # Using Spread Function get change from unaffected to affected and from recovered to affected
+                unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(
+                    self.disease.parameters.spread_mode.spread_parameters,
+                    self.locations[i].parameters.people_parameters.population)
+                self.locations[i].parameters.people_parameters.population.affected += int(unaffected_to_affected + recovered_to_affected)
+                self.locations[i].parameters.people_parameters.population.unaffected -= int(unaffected_to_affected)
+                self.locations[i].parameters.people_parameters.population.recovered -= int(recovered_to_affected)
         
         # Calculate how many people leave and come into via transport using transport spread function of disease
+        if not self.disease.parameters.spread_mode.transport_spread_function == None:
+            for i in range(len(self.locations)):
+                for j in range(i+1, len(self.locations)):
+                    con = self.connection_matrix[i][j]
+                    if not con == None:
+                        popchange_loc1, popchange_loc2 = self.disease.parameters.spread_mode.transport_spread_function(
+                            self.disease.parameters.spread_mode.spread_parameters,
+                            self.locations[i].parameters.people_parameters.population,
+                            self.locations[j].parameters.people_parameters.population,
+                            con)
+                        self.locations[i].parameters.people_parameters.population.living += popchange_loc1.living
+                        self.locations[i].parameters.people_parameters.population.affected += popchange_loc1.affected
+                        self.locations[i].parameters.people_parameters.population.unaffected += popchange_loc1.unaffected
+                        self.locations[i].parameters.people_parameters.population.dead += popchange_loc1.dead
+                        self.locations[i].parameters.people_parameters.population.recovered += popchange_loc1.recovered
+
+                        self.locations[j].parameters.people_parameters.population.living += popchange_loc2.living
+                        self.locations[j].parameters.people_parameters.population.affected += popchange_loc2.affected
+                        self.locations[j].parameters.people_parameters.population.unaffected += popchange_loc2.unaffected
+                        self.locations[j].parameters.people_parameters.population.dead += popchange_loc2.dead
+                        self.locations[j].parameters.people_parameters.population.recovered += popchange_loc2.recovered
+                    
         for i in range(len(self.locations)):
-            for j in range(i+1, len(self.locations)):
-                con = self.connection_matrix[i][j]
-                if not con == None:
-                    popchange_loc1, popchange_loc2 = self.disease.parameters.spread_mode.transport_spread_function(
-                        self.disease.parameters.spread_mode.spread_parameters,
-                        self.locations[i].parameters.people_parameters.population,
-                        self.locations[j].parameters.people_parameters.population,
-                        con)
-                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.living
-                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.affected
-                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.unaffected
-                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.dead
-                    self.locations[i].parameters.people_parameters.population.living += popchange_loc1.recovered
+            self.locations[i].parameters.people_parameters.population = self.convPop2Int(self.locations[i].parameters.people_parameters.population)
 
-                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.living
-                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.affected
-                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.unaffected
-                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.dead
-                    self.locations[j].parameters.people_parameters.population.living += popchange_loc2.recovered
-
-
+        self.UpdatePopulationData()
+    
+    def convPop2Int(self, pop):
+        pop.dead = int(pop.dead)
+        pop.affected = int(pop.affected)
+        pop.unaffected = int(pop.unaffected)
+        pop.recovered = int(pop.recovered)
+        pop.living = int(pop.affected + pop.unaffected + pop.recovered)
+        return pop
 
 
 # Population
@@ -170,3 +188,10 @@ class Population:
         self.affected = 0
         self.unaffected = 0
         self.recovered = 0
+
+    def print(self):
+        print("Living       : ", self.living)
+        print("Dead         : ", self.dead)
+        print("Affected     : ", self.affected)
+        print("Unaffected   : ", self.unaffected)
+        print("Recovered    : ", self.recovered)
