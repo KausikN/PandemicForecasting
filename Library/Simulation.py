@@ -89,7 +89,42 @@ def transport_spread_function(spread_parameters, pop1, pop2, con):
 
     return popchange_loc1, popchange_loc2
 
+# Plot Functions
+def PlotPopulationHistory(history):
+    # Plot
+    history_living = []
+    history_affected = []
+    history_unaffected = []
+    history_recovered = []
+    history_dead = []
+    for pop in history:
+        history_living.append(pop.living)
+        history_affected.append(pop.affected)
+        history_unaffected.append(pop.unaffected)
+        history_recovered.append(pop.recovered)
+        history_dead.append(pop.dead)
 
+    ax = plt.subplot(5, 1, 1)
+    ax.title.set_text("Living")
+    plt.plot(range(1, len(history_living)+1), history_living)
+
+    ax = plt.subplot(5, 1, 2)
+    ax.title.set_text("Affected")
+    plt.plot(range(1, len(history_affected)+1), history_affected)
+
+    ax = plt.subplot(5, 1, 3)
+    ax.title.set_text("unaffected")
+    plt.plot(range(1, len(history_unaffected)+1), history_unaffected)
+
+    ax = plt.subplot(5, 1, 4)
+    ax.title.set_text("Recovered")
+    plt.plot(range(1, len(history_recovered)+1), history_recovered)
+
+    ax = plt.subplot(5, 1, 5)
+    ax.title.set_text("Dead")
+    plt.plot(range(1, len(history_dead)+1), history_dead)
+
+    plt.show()
 
 # Driver Code
 # Disease
@@ -150,37 +185,4 @@ connection_matrix = [   [None               , connection_1_2],
 sim = SimulationParameters(disease, locations, connection_matrix, max_days)
 
 history = SimulateSpread(sim, progress=progressBar, verbose=verbose)
-# Plot
-history_living = []
-history_affected = []
-history_unaffected = []
-history_recovered = []
-history_dead = []
-for pop in history:
-    history_living.append(pop.living)
-    history_affected.append(pop.affected)
-    history_unaffected.append(pop.unaffected)
-    history_recovered.append(pop.recovered)
-    history_dead.append(pop.dead)
-
-ax = plt.subplot(5, 1, 1)
-ax.title.set_text("Living")
-plt.plot(range(1, len(history_living)+1), history_living)
-
-ax = plt.subplot(5, 1, 2)
-ax.title.set_text("Affected")
-plt.plot(range(1, len(history_affected)+1), history_affected)
-
-ax = plt.subplot(5, 1, 3)
-ax.title.set_text("unaffected")
-plt.plot(range(1, len(history_unaffected)+1), history_unaffected)
-
-ax = plt.subplot(5, 1, 4)
-ax.title.set_text("Recovered")
-plt.plot(range(1, len(history_recovered)+1), history_recovered)
-
-ax = plt.subplot(5, 1, 5)
-ax.title.set_text("Dead")
-plt.plot(range(1, len(history_dead)+1), history_dead)
-
-plt.show()
+PlotPopulationHistory(history)
