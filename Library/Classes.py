@@ -2,6 +2,9 @@
 This contains all the classes used
 '''
 
+# Imports
+import random
+
 # Disease Classes
 class Disease:
     def __init__(self, name, parameters=None):
@@ -11,7 +14,7 @@ class Disease:
 class DiseaseParameters:
     def __init__(self, spread_mode=None, severity=0.0, lethality=0.0):
         self.spread_mode = spread_mode                                  # Mode and parameters of spreading
-        self.severity = severity                                        # Severity
+        self.severity = severity                                        # Severity - 1 - recovery rate of normal affected person
         self.lethality = lethality                                      # Lethality - % of deaths per day due to disease
 
 class SpreadMode:
@@ -63,10 +66,11 @@ class ClimateParameters:
 
 # People Parameters
 class PeopleParameters:
-    def __init__(self, population, birth_rate, death_rate, people_demography=None):
+    def __init__(self, population, birth_rate, death_rate, hospital_admittance_rate, people_demography=None):
         self.population = population                                    # No of people living
-        self.birth_rate = birth_rate                                    # Birth rate - no of births per day
-        self.death_rate = death_rate                                    # Death rate - no of natural causes deaths per day
+        self.birth_rate = birth_rate                                    # Birth rate - rate of births per day
+        self.death_rate = death_rate                                    # Death rate - rate of natural causes deaths per day
+        self.hospital_admittance_rate = hospital_admittance_rate        # Hostpital Admittance Rate - rate of affected people who get admitted to hospitals 
         self.people_demography = people_demography                      # Splitup of the population - based on gender, access to medicines, etc
 
 # Medical Parameters
@@ -75,10 +79,12 @@ class MedicalParameters:
         self.hospitals = hospitals                                      # Hospital Data
 
 class Hospital:
-    def __init__(self, name, max_patients_treatable, recovery_factor):
+    def __init__(self, name, max_patients_treatable, treatment_factor, recovery_rate):
         self.name = name                                                # Hospital name
+        self.current_patients = 0                                       # Current patients in hospital
         self.max_patients_treatable = max_patients_treatable            # Maximum no of patients treatable by hospital at a time
-        self.recovery_factor = recovery_factor                          # Factor defines ability of a hospital to cure a patient
+        self.treatment_factor = treatment_factor                        # Factor defines the reduction in lethality for a admitted patient
+        self.recovery_rate = recovery_rate                              # Factor defines rate of a hospital to cure patients
 
 # Simulation Parameters
 class SimulationParameters:
@@ -128,13 +134,7 @@ class SimulationParameters:
 
         # Next Address Spread Within the Location
         if not self.disease.parameters.spread_mode.spread_function == None:
-            # Update deaths due to disease
             for i in range(len(self.locations)):
-                death_count = int(self.disease.parameters.lethality * self.locations[i].parameters.people_parameters.population.affected)
-                self.locations[i].parameters.people_parameters.population.affected -= int(death_count)
-                self.locations[i].parameters.people_parameters.population.living -= int(death_count)
-                self.locations[i].parameters.people_parameters.population.dead += int(death_count)
-
                 # Using Spread Function get change from unaffected to affected and from recovered to affected
                 unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(
                     self.disease.parameters.spread_mode.spread_parameters,
@@ -148,6 +148,8 @@ class SimulationParameters:
             for i in range(len(self.locations)):
                 for j in range(i+1, len(self.locations)):
                     con = self.connection_matrix[i][j]
+                    con.loc1 = self.locations[i]
+                    con.loc2 = self.locations[j]
                     if not con == None:
                         popchange_loc1, popchange_loc2 = self.disease.parameters.spread_mode.transport_spread_function(
                             self.disease.parameters.spread_mode.spread_parameters,
@@ -166,6 +168,75 @@ class SimulationParameters:
                         self.locations[j].parameters.people_parameters.population.dead += popchange_loc2.dead
                         self.locations[j].parameters.people_parameters.population.recovered += popchange_loc2.recovered
                     
+        # Calculate Recovered and admitted to hospitals
+        for i in range(len(self.locations)):
+            # If no hospitals
+            if self.locations[i].parameters.medical_parameters == None:
+                # Calculate deaths
+                death_count = int(self.disease.parameters.lethality * self.locations[i].parameters.people_parameters.population.affected)
+                self.locations[i].parameters.people_parameters.population.affected -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.living -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.dead += int(death_count)
+
+                # Calculate recovered
+                recovery_count = int((1 - self.disease.parameters.severity) * self.locations[i].parameters.people_parameters.population.affected)
+                self.locations[i].parameters.people_parameters.population.affected -= int(recovery_count)
+                self.locations[i].parameters.people_parameters.population.recovered += int(recovery_count)
+
+            # If hospitals are there
+            else:
+                # First calculate how many deaths
+                # For admitted patients lethality = actual lethality * treatment_factor
+                admitted = 0
+                death_count = 0
+                for hosp_index in range(len(self.locations[i].parameters.medical_parameters.hospitals)):
+                    admitted += self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients
+                    new_deaths = int(self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients * self.disease.parameters.lethality * self.locations[i].parameters.medical_parameters.hospitals[hosp_index].treatment_factor)
+                    if self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients - new_deaths < 0:
+                        new_deaths = self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients
+                    self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients -= new_deaths
+                    death_count += new_deaths
+                #print("i:", self.locations[i].parameters.people_parameters.population.affected, admitted)
+                unadmitted = self.locations[i].parameters.people_parameters.population.affected - admitted
+                # For not admitted patients lethality = actual lethality
+                new_deaths = int(self.disease.parameters.lethality * unadmitted)
+                #print("d:", unadmitted, new_deaths)
+                unadmitted -= new_deaths
+                death_count += new_deaths
+                self.locations[i].parameters.people_parameters.population.affected -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.living -= int(death_count)
+                self.locations[i].parameters.people_parameters.population.dead += int(death_count)
+
+                # Calculate recovered
+                recovery_count = 0
+                for hosp_index in range(len(self.locations[i].parameters.medical_parameters.hospitals)):
+                    new_recovery = int(self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients * self.locations[i].parameters.medical_parameters.hospitals[hosp_index].recovery_rate)
+                    if self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients - new_recovery < 0:
+                        new_recovery = self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients
+                    self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients -= new_recovery
+                    recovery_count += new_recovery
+
+                new_recovery = int((1 - self.disease.parameters.severity) * unadmitted)
+                #print("r:", unadmitted, new_recovery)
+                unadmitted -= new_recovery
+                recovery_count += new_recovery
+                self.locations[i].parameters.people_parameters.population.affected -= int(recovery_count)
+                self.locations[i].parameters.people_parameters.population.recovered += int(recovery_count)
+
+                # Calculate Admittance to hospitals
+                ppl_to_admit = int(self.locations[i].parameters.people_parameters.hospital_admittance_rate * unadmitted)
+                for hosp_index in range(len(self.locations[i].parameters.medical_parameters.hospitals)):
+                    hosp = self.locations[i].parameters.medical_parameters.hospitals[hosp_index]
+                    adm = random.randint(0, ppl_to_admit)
+                    if adm > hosp.max_patients_treatable - hosp.current_patients:
+                        adm = hosp.max_patients_treatable - hosp.current_patients
+                    self.locations[i].parameters.medical_parameters.hospitals[hosp_index].current_patients += adm
+                    ppl_to_admit -= adm
+                    if ppl_to_admit == 0:
+                        break
+
+
+
         for i in range(len(self.locations)):
             self.locations[i].parameters.people_parameters.population = self.convPop2Int(self.locations[i].parameters.people_parameters.population)
 
@@ -195,3 +266,12 @@ class Population:
         print("Affected     : ", self.affected)
         print("Unaffected   : ", self.unaffected)
         print("Recovered    : ", self.recovered)
+
+    def copy(self):
+        pop = Population()
+        pop.living = self.living
+        pop.dead = self.dead
+        pop.affected = self.affected
+        pop.unaffected = self.unaffected
+        pop.recovered = self.recovered
+        return pop
