@@ -247,10 +247,10 @@ hospital_admittance_rate = 0.35
 
 pop2 = Population()
 pop2.living = 5000
-pop2.affected = 1
+pop2.affected = 50
 pop2.unaffected = pop2.living - pop2.affected
-hosp_1 = Hospital("Hospital 1", 500, 0.5, 0.25)
-hosp_2 = Hospital("Hospital 2", 100, 0.25, 0.5)
+hosp_1 = Hospital("Hospital 1", 1000, 0.65, 0.5)
+hosp_2 = Hospital("Hospital 2", 750, 0.5, 0.55)
 loc2_hospitals = [hosp_1, hosp_2]
 loc2_medical_params = MedicalParameters(loc1_hospitals)
 loc2_people_params = PeopleParameters(pop2, birth_rate, death_rate, hospital_admittance_rate)
@@ -265,16 +265,16 @@ connectivity_parameters = ConnectivityParameters(connect_type, screening_factor=
 connection_1_2 = Connection(loc1, loc2, connectivity_parameters, travel_rates)
 
 # Simulation
-# locations = [loc1, loc2]
-# connection_matrix = [   
-#                       [None               , connection_1_2],
-#                       [connection_1_2     ,           None]
-#                     ]
-locations = [loc1]
+locations = [loc1, loc2]
 connection_matrix = [   
-                        [None     ,         None],
-                        [None     ,         None]
+                      [None               , connection_1_2],
+                      [connection_1_2     ,           None]
                     ]
+# locations = [loc1]
+# connection_matrix = [   
+#                         [None     ,         None],
+#                         [None     ,         None]
+#                     ]
 sim = SimulationParameters(disease, locations, connection_matrix, max_days)
 
 global_history, loc_history, all_dead_day = SimulateSpread(sim, min_living=min_living, progress=progressBar, verbose=verbose)
