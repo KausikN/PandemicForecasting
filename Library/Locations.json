@@ -1,0 +1,73 @@
+[
+    {
+        "name": "Loc 1", 
+        "center_point": [1, 2], 
+        
+        "population": {
+            "living": 10000, 
+            "affected": 100, 
+            "unaffected": 9900, 
+            "recovered": 0, 
+            "dead": 0
+        }, 
+        "birth_rate": 0.1, 
+        "death_rate": 0.025, 
+        "hospital_admittance_rate": 0.75, 
+
+        "hospitals": [
+            {
+                "name": "Hospital 1", 
+                "max_patients_treatable": 200, 
+                "treatment_factor": 0.5, 
+                "recovery_rate": 0.25
+            }, 
+            {
+                "name": "Hospital 2", 
+                "max_patients_treatable": 100, 
+                "treatment_factor": 0.25, 
+                "recovery_rate": 0.5
+            }
+        ], 
+
+        "other_parameters": {
+            "climate_parameters": null
+        }
+
+    }, 
+
+    {
+        "name": "Loc 2", 
+        "center_point": [3, 2], 
+        
+        "population": {
+            "living": 5000, 
+            "affected": 50, 
+            "unaffected": 4950, 
+            "recovered": 0, 
+            "dead": 0
+        }, 
+        "birth_rate": 0.2, 
+        "death_rate": 0.1, 
+        "hospital_admittance_rate": 0.35, 
+
+        "hospitals": [
+            {
+                "name": "Hospital 1", 
+                "max_patients_treatable": 1000, 
+                "treatment_factor": 0.65, 
+                "recovery_rate": 0.5
+            }, 
+            {
+                "name": "Hospital 2", 
+                "max_patients_treatable": 750, 
+                "treatment_factor": 0.5, 
+                "recovery_rate": 0.55
+            }
+        ], 
+
+        "other_parameters": {
+            "climate_parameters": null
+        }
+
+    }
+]

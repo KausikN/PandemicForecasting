@@ -31,9 +31,10 @@ def SimulateSpread(sim, min_living=10, progress=False, verbose=True):
                 loc_pop_history[li].append(sim.locations[li].parameters.people_parameters.population.copy())
             # Check for all dead
             #print(sim.global_population.living)
-            if sim.global_population.living <= min_living:
-                all_dead_day = day+1
-                break
+            if not min_living == None:
+                if sim.global_population.living <= min_living:
+                    all_dead_day = day+1
+                    break
 
     else:
         for day in range(sim.max_days):
@@ -43,9 +44,10 @@ def SimulateSpread(sim, min_living=10, progress=False, verbose=True):
                 loc_pop_history[li].append(sim.locations[li].parameters.people_parameters.population.copy())
             # Check for all dead
             #print(sim.global_population.living)
-            if sim.global_population.living <= min_living:
-                all_dead_day = day+1
-                break
+            if not min_living == None:
+                if sim.global_population.living <= min_living:
+                    all_dead_day = day+1
+                    break
 
     if verbose:
         for day in range(len(global_pop_history)):
@@ -62,8 +64,9 @@ class SpreadParameters_Exponential:
         self.error_magnifier = error_magnifier
 
 
-def spread_function_Exponential(spread_parameters, population):
+def spread_function_Exponential(spread_parameters, location):
     r_precision = 2
+    population = location.parameters.people_parameters.population
     # Formula of spread -> new_affected = (prevaffected * (expval)) + (random_error bw [0, 1] * error_magnifier) - prev_affected
     unaffected_to_affected = 0
     recovered_to_affected = 0
@@ -81,10 +84,16 @@ def spread_function_Exponential(spread_parameters, population):
     unaffected_to_affected = int(new_affected * (population.unaffected / (population.unaffected + population.recovered)))
     recovered_to_affected = int(new_affected - unaffected_to_affected)
 
-    return unaffected_to_affected, recovered_to_affected
+    location.parameters.people_parameters.population.affected += int(unaffected_to_affected + recovered_to_affected)
+    location.parameters.people_parameters.population.unaffected -= int(unaffected_to_affected)
+    location.parameters.people_parameters.population.recovered -= int(recovered_to_affected)
+
+    return location
 
 
-def transport_spread_function(spread_parameters, pop1, pop2, con):
+def transport_function(spread_parameters, location_1, location_2, con):
+    pop1 = location_1.parameters.people_parameters.population
+    pop2 = location_2.parameters.people_parameters.population
     # Formula - travel_rate * each population
     popchange_loc1 = Population()
     popchange_loc2 = Population()
@@ -114,7 +123,19 @@ def transport_spread_function(spread_parameters, pop1, pop2, con):
     popchange_loc1.dead = 0
     popchange_loc2.dead = 0
 
-    return popchange_loc1, popchange_loc2
+    location_1.parameters.people_parameters.population.living += popchange_loc1.living
+    location_1.parameters.people_parameters.population.affected += popchange_loc1.affected
+    location_1.parameters.people_parameters.population.unaffected += popchange_loc1.unaffected
+    location_1.parameters.people_parameters.population.dead += popchange_loc1.dead
+    location_1.parameters.people_parameters.population.recovered += popchange_loc1.recovered
+
+    location_2.parameters.people_parameters.population.living += popchange_loc2.living
+    location_2.parameters.people_parameters.population.affected += popchange_loc2.affected
+    location_2.parameters.people_parameters.population.unaffected += popchange_loc2.unaffected
+    location_2.parameters.people_parameters.population.dead += popchange_loc2.dead
+    location_2.parameters.people_parameters.population.recovered += popchange_loc2.recovered
+
+    return location_1, location_2
 
 # Util Functions
 
@@ -200,6 +221,7 @@ def PlotLocPopulationHistory(loc_history):
     
     plt.show()
 
+'''
 # Driver Code
 # All Params
 severity = 0.95
@@ -216,7 +238,7 @@ verbose = False
 spread_function = spread_function_Exponential
 # Params
 spread_params = SpreadParameters_Exponential(expval, error_magnifier)
-spread_mode = SpreadMode(spread_params, spread_function, transport_spread_function)
+spread_mode = SpreadMode(spread_params, spread_function, None, transport_function)
 diseaseParams = DiseaseParameters(spread_mode, severity, lethality)
 disease = Disease("test", diseaseParams)
 
@@ -282,3 +304,4 @@ if all_dead_day > -1:
     print("Whole Global Population DEAD by day", all_dead_day)
 PlotPopulationHistory(global_history)
 PlotLocPopulationHistory(loc_history)
+'''

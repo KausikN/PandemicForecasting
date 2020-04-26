@@ -18,24 +18,43 @@ class DiseaseParameters:
         self.lethality = lethality                                      # Lethality - % of deaths per day due to disease
 
 class SpreadMode:
-    def __init__(self, spread_parameters, spread_function, transport_spread_function):
+    def __init__(self, spread_parameters, spread_function, transport_parameters, transport_function):
         self.spread_parameters = spread_parameters                      # Custom Parameters for the spread function - changes for different functions
-        self.spread_function = spread_function                          # Custom function defining how disease spreads - input must be 
-        self.transport_spread_function = transport_spread_function      # Custom function defining how disease spreads via transport
-
+        self.spread_function = spread_function                          # Custom function defining how disease spreads
+        self.transport_parameters = transport_parameters                # Custom Parameters for the transport function - changes for different functions
+        self.transport_function = transport_function                    # Custom function defining how disease spreads via transport
+        
 # Location Classes
 class Location:
     def __init__(self, name, parameters):
         self.name = name                                                # Name of the location
         self.parameters = parameters                                    # Parameters of the location
 
+    def copy(self):
+        return Location(self.name, self.parameters)
+
 class LocationParameters:
-    def __init__(self, center_point, area_parameters=None, medical_parameters=None, people_parameters=None, climate_parameters=None):
+    def __init__(self, center_point, area_parameters=None, people_parameters=None, medical_parameters=None, other_parameters=None):
         self.center_point = center_point                                # Central Median point in 2D of the location
         self.area_parameters = area_parameters                          # Parameters of the area of the location
         self.people_parameters = people_parameters                      # Parameters of the people of the location
-        self.climate_parameters = climate_parameters                    # Parameters of the climate of the location
         self.medical_parameters = medical_parameters                    # Parameters of the medical situation of the location
+        self.other_parameters = other_parameters                        # Other parameters as a dictionary of classes
+
+# Basic Parameters
+# People Parameters
+class PeopleParameters:
+    def __init__(self, population, birth_rate, death_rate, hospital_admittance_rate, people_demography=None):
+        self.population = population                                    # No of people living
+        self.birth_rate = birth_rate                                    # Birth rate - rate of births per day
+        self.death_rate = death_rate                                    # Death rate - rate of natural causes deaths per day
+        self.hospital_admittance_rate = hospital_admittance_rate        # Hostpital Admittance Rate - rate of affected people who get admitted to hospitals 
+        self.people_demography = people_demography                      # Splitup of the population - based on gender, access to medicines, etc
+
+# Medical Parameters
+class MedicalParameters:
+    def __init__(self, hospitals=[]):
+        self.hospitals = hospitals                                      # Hospital Data
 
 # Connection Classes
 # Connects 2 Locations
@@ -56,35 +75,6 @@ class ConnectivityParameters:
         self.connect_type = connect_type                                # Type of the connection - Water, Air, Land, etc
         self.spreading_factor = spreading_factor                        # SpreadFactor - Factor determines to how many disease spreads during travel
         self.screening_factor = screening_factor                        # ScreeningFactor - Factor determines how many people with the disease are screened and quarantined
-
-# Climate Classes
-class ClimateParameters:
-    def __init__(self, season, humidity, temperature):
-        self.season = season                                            # Current Season
-        self.humidity = humidity                                        # Current Humidity
-        self.temperature = temperature                                  # Current Temperature
-
-# People Parameters
-class PeopleParameters:
-    def __init__(self, population, birth_rate, death_rate, hospital_admittance_rate, people_demography=None):
-        self.population = population                                    # No of people living
-        self.birth_rate = birth_rate                                    # Birth rate - rate of births per day
-        self.death_rate = death_rate                                    # Death rate - rate of natural causes deaths per day
-        self.hospital_admittance_rate = hospital_admittance_rate        # Hostpital Admittance Rate - rate of affected people who get admitted to hospitals 
-        self.people_demography = people_demography                      # Splitup of the population - based on gender, access to medicines, etc
-
-# Medical Parameters
-class MedicalParameters:
-    def __init__(self, hospitals=[]):
-        self.hospitals = hospitals                                      # Hospital Data
-
-class Hospital:
-    def __init__(self, name, max_patients_treatable, treatment_factor, recovery_rate):
-        self.name = name                                                # Hospital name
-        self.current_patients = 0                                       # Current patients in hospital
-        self.max_patients_treatable = max_patients_treatable            # Maximum no of patients treatable by hospital at a time
-        self.treatment_factor = treatment_factor                        # Factor defines the reduction in lethality for a admitted patient
-        self.recovery_rate = recovery_rate                              # Factor defines rate of a hospital to cure patients
 
 # Simulation Parameters
 class SimulationParameters:
@@ -135,38 +125,31 @@ class SimulationParameters:
         # Next Address Spread Within the Location
         if not self.disease.parameters.spread_mode.spread_function == None:
             for i in range(len(self.locations)):
+                # print("Spread")
+                # print(i)
                 # Using Spread Function get change from unaffected to affected and from recovered to affected
-                unaffected_to_affected, recovered_to_affected = self.disease.parameters.spread_mode.spread_function(
+                self.locations[i] = self.disease.parameters.spread_mode.spread_function(
                     self.disease.parameters.spread_mode.spread_parameters,
-                    self.locations[i].parameters.people_parameters.population)
-                self.locations[i].parameters.people_parameters.population.affected += int(unaffected_to_affected + recovered_to_affected)
-                self.locations[i].parameters.people_parameters.population.unaffected -= int(unaffected_to_affected)
-                self.locations[i].parameters.people_parameters.population.recovered -= int(recovered_to_affected)
+                    self.locations[i])
+                
+                
         
         # Calculate how many people leave and come into via transport using transport spread function of disease
-        if not self.disease.parameters.spread_mode.transport_spread_function == None:
+        if not self.disease.parameters.spread_mode.transport_function == None:
             for i in range(len(self.locations)):
                 for j in range(i+1, len(self.locations)):
                     con = self.connection_matrix[i][j]
                     con.loc1 = self.locations[i]
                     con.loc2 = self.locations[j]
                     if not con == None:
-                        popchange_loc1, popchange_loc2 = self.disease.parameters.spread_mode.transport_spread_function(
+                        # print("Trans:")
+                        # print(i, j)
+                        self.locations[i], self.locations[j] = self.disease.parameters.spread_mode.transport_function(
                             self.disease.parameters.spread_mode.spread_parameters,
-                            self.locations[i].parameters.people_parameters.population,
-                            self.locations[j].parameters.people_parameters.population,
+                            self.locations[i],
+                            self.locations[j],
                             con)
-                        self.locations[i].parameters.people_parameters.population.living += popchange_loc1.living
-                        self.locations[i].parameters.people_parameters.population.affected += popchange_loc1.affected
-                        self.locations[i].parameters.people_parameters.population.unaffected += popchange_loc1.unaffected
-                        self.locations[i].parameters.people_parameters.population.dead += popchange_loc1.dead
-                        self.locations[i].parameters.people_parameters.population.recovered += popchange_loc1.recovered
-
-                        self.locations[j].parameters.people_parameters.population.living += popchange_loc2.living
-                        self.locations[j].parameters.people_parameters.population.affected += popchange_loc2.affected
-                        self.locations[j].parameters.people_parameters.population.unaffected += popchange_loc2.unaffected
-                        self.locations[j].parameters.people_parameters.population.dead += popchange_loc2.dead
-                        self.locations[j].parameters.people_parameters.population.recovered += popchange_loc2.recovered
+                        
                     
         # Calculate Recovered and admitted to hospitals
         for i in range(len(self.locations)):
@@ -251,14 +234,15 @@ class SimulationParameters:
         return pop
 
 
+# Util Classes
 # Population
 class Population:
-    def __init__(self):
-        self.living = 0
-        self.dead = 0
-        self.affected = 0
-        self.unaffected = 0
-        self.recovered = 0
+    def __init__(self, living=0, dead=0, affected=0, unaffected=0, recovered=0):
+        self.living = living
+        self.dead = dead
+        self.affected = affected
+        self.unaffected = unaffected
+        self.recovered = recovered
 
     def print(self):
         print("Living       : ", self.living)
@@ -275,3 +259,12 @@ class Population:
         pop.unaffected = self.unaffected
         pop.recovered = self.recovered
         return pop
+
+# Hospital
+class Hospital:
+    def __init__(self, name, max_patients_treatable, treatment_factor, recovery_rate):
+        self.name = name                                                # Hospital name
+        self.current_patients = 0                                       # Current patients in hospital
+        self.max_patients_treatable = max_patients_treatable            # Maximum no of patients treatable by hospital at a time
+        self.treatment_factor = treatment_factor                        # Factor defines the reduction in lethality for a admitted patient
+        self.recovery_rate = recovery_rate                              # Factor defines rate of a hospital to cure patients
