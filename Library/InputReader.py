@@ -64,6 +64,7 @@ def ParseLocationsData(locations_data):
     for loc_data in locations_data:
         #population = namedtuple('Population', loc_data["population"].keys())(*loc_data["population"].values())
         pop_data = loc_data["population"]
+        pop_data["unaffected"] = pop_data["living"] - pop_data["affected"] - pop_data["recovered"]
         population = Population(living=pop_data["living"], dead=pop_data["dead"], affected=pop_data["affected"], unaffected=pop_data["unaffected"], recovered=pop_data["recovered"])
         people_parameters = PeopleParameters(population, loc_data["birth_rate"], loc_data["death_rate"], loc_data["hospital_admittance_rate"])
 

@@ -31,9 +31,10 @@ def spread_function(spread_parameters, location):
         unaffected_to_affected = 0
         recovered_to_affected = 0
 
-        location.parameters.people_parameters.population.affected += int(unaffected_to_affected + recovered_to_affected)
-        location.parameters.people_parameters.population.unaffected -= int(unaffected_to_affected)
-        location.parameters.people_parameters.population.recovered -= int(recovered_to_affected)
+        return location
+
+    if population.affected == 0:
+        new_affected = 0
 
         return location
 

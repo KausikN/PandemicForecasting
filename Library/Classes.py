@@ -106,9 +106,9 @@ class SimulationParameters:
             ppl = self.locations[i].parameters.people_parameters
             new_births = int(ppl.population.living * ppl.birth_rate)
             new_deaths = int(ppl.population.living * ppl.death_rate)
-            affected_change = -1 * new_deaths * (ppl.population.affected / ppl.population.living) # Assuming no new born can be affected
+            affected_change = new_deaths * (ppl.population.affected / ppl.population.living) # Assuming no new born can be affected
             unaffected_change = new_births - new_deaths * (ppl.population.unaffected / ppl.population.living)
-            recovered_change = -1 * new_deaths * (ppl.population.recovered / ppl.population.living) # Assuming no new born can immediately be recovered
+            recovered_change = new_deaths * (ppl.population.recovered / ppl.population.living) # Assuming no new born can immediately be recovered
             if ((ppl.population.living + new_births - new_deaths) < 0): # If all dead
                 self.locations[i].parameters.people_parameters.population.dead += ppl.population.living
                 self.locations[i].parameters.people_parameters.population.living = 0
@@ -118,8 +118,8 @@ class SimulationParameters:
             else:
                 self.locations[i].parameters.people_parameters.population.dead += int(new_deaths)
                 self.locations[i].parameters.people_parameters.population.unaffected += int(unaffected_change)
-                self.locations[i].parameters.people_parameters.population.affected += int(affected_change)
-                self.locations[i].parameters.people_parameters.population.recovered += int(recovered_change)
+                self.locations[i].parameters.people_parameters.population.affected -= int(affected_change)
+                self.locations[i].parameters.people_parameters.population.recovered -= int(recovered_change)
                 self.locations[i].parameters.people_parameters.population.living = self.locations[i].parameters.people_parameters.population.unaffected + self.locations[i].parameters.people_parameters.population.affected + self.locations[i].parameters.people_parameters.population.recovered
 
         # Next Address Spread Within the Location
@@ -149,8 +149,8 @@ class SimulationParameters:
                             self.locations[i],
                             self.locations[j],
                             con)
-                        
-                    
+
+
         # Calculate Recovered and admitted to hospitals
         for i in range(len(self.locations)):
             # If no hospitals

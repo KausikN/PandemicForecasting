@@ -14,7 +14,7 @@ connections_path = "Connections.json"
 max_days = 100
 min_living = 10
 
-progressBar = True
+progressBar = False
 verbose = False
 
 
