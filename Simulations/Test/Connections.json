@@ -1,0 +1,12 @@
+[
+    {
+        "loc1": "Loc 1", 
+        "loc2": "Loc 2", 
+
+        "connect_type": "Air", 
+        "spreading_factor": null, 
+        "screening_factor": 0.1, 
+
+        "travel_rates": [0.25, 0.1]
+    }
+]
