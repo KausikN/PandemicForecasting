@@ -14,3 +14,8 @@
    - Connections.json : contains parameters for simulating the connections and travel between locations
    
  - Run main.py
+ 
+ ## Sample Simulation
+ Test
+ ![Global Image](https://github.com/KausikN/PandemicForecasting/blob/master/Simulations/Test/Test_Global.png)
+ ![Loc Image](https://github.com/KausikN/PandemicForecasting/blob/master/Simulations/Test/Test_LocationWise.png)
