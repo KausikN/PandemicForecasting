@@ -6,12 +6,14 @@ Simulator
 import random
 import numpy as np
 
+from .Disease import *
 from .Location import *
+from .Connection import *
 
 # Main Classes
-class Params_Simulation:
+class Simulator:
     '''
-    Class - Simulation
+    Class - Simulator
     '''
     # Functions
     def __init__(self, 
@@ -45,8 +47,8 @@ class Params_Simulation:
         # Update the matrix with the connections
         for i in range(len(self.connections)):
             connection = self.connections[i]
-            ind_1 = location_names.index(connection.loc_1.name)
-            ind_2 = location_names.index(connection.loc_2.name)
+            ind_1 = location_names.index(connection.loc_1)
+            ind_2 = location_names.index(connection.loc_2)
             self.connection_matrix[ind_1, ind_2] = i
 
     def UpdateOverallPopulation(self):

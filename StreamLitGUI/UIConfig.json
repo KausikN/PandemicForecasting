@@ -1,0 +1,10 @@
+{
+    "PROJECT_NAME": "PandemicForecasting",
+    "PROJECT_LINK": "https://github.com/KausikN/PandemicForecasting",
+
+    "PROJECT_DESC": "Simulate and visualise the spread of a disease with different models and parameters",
+
+    "PROJECT_README": "README.md",
+
+    "PROJECT_MODES": ["Disease Spread Simulator"]
+}

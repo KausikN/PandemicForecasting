@@ -1,0 +1,136 @@
+{
+    "name": "PandemicForecasting",
+    "repoLink": "https://github.com/KausikN/PandemicForecasting",
+    "localPath": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+    "modules": {
+        "app.py": {
+            "name": "app",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/app.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "",
+            "dependencies": [
+                "os.py",
+                "streamlit.py",
+                "json.py",
+                "*.py"
+            ]
+        },
+        "PandemicForecasting.py": {
+            "name": "PandemicForecasting",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/PandemicForecasting.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "",
+            "dependencies": [
+                "*.py"
+            ]
+        },
+        "Library/Connection.py": {
+            "name": "Connection",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/Connection.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": []
+        },
+        "Library/Disease.py": {
+            "name": "Disease",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/Disease.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": [
+                "*.py"
+            ]
+        },
+        "Library/Location.py": {
+            "name": "Location",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/Location.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": [
+                "random.py"
+            ]
+        },
+        "Library/OtherParams.py": {
+            "name": "OtherParams",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/OtherParams.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": []
+        },
+        "Library/Simulator.py": {
+            "name": "Simulator",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/Simulator.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": [
+                "random.py",
+                "numpy.py",
+                "*.py",
+                "*.py",
+                "*.py"
+            ]
+        },
+        "Library/SpreadModes.py": {
+            "name": "SpreadModes",
+            "type": "local",
+            "link": "https://github.com/KausikN/PandemicForecasting/blob/master/Library/SpreadModes.py",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "Library",
+            "dependencies": []
+        },
+        "*.py": {
+            "name": "*",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "os.py": {
+            "name": "os",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "random.py": {
+            "name": "random",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "streamlit.py": {
+            "name": "streamlit",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "numpy.py": {
+            "name": "numpy",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "json.py": {
+            "name": "json",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        }
+    }
+}

@@ -63,6 +63,8 @@ class Population:
 
         self.__dict__.update(args)
 
+        self.updateLiving()
+
     def print(self):
         print("Living       : ", self.living)
         print("Unaffected   : ", self.unaffected)
@@ -170,7 +172,7 @@ class Structure_Hospital:
     '''
     def __init__(self, 
         name, capacity, 
-        treatment_factor, spread_prevention_factor, 
+        treatment_factor, 
         recovery_rate, 
         **args
         ):

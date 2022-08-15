@@ -19,8 +19,6 @@ class Connection:
         self.loc_1 = loc_1
         # Location 2 of the connection                                  
         self.loc_2 = loc_2
-        # Distance between the 2 locations
-        self.distance = self.getDistance(loc_1.params.center_point, loc_2.params.center_point)
         # Parameters of the connectivity
         self.params = params
         # TravelRate - Rate of travel from 1 to 2
@@ -36,7 +34,7 @@ class Params_Connection:
     Class - Connection Parameters
     '''
     def __init__(self, 
-        connect_type, spreading_factor, screening_factor, 
+        connect_type, 
         **args
         ):
         # Type of the connection - Water, Air, Land, etc
