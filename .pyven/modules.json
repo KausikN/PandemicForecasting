@@ -71,6 +71,7 @@
             "dependencies": [
                 "random.py",
                 "numpy.py",
+                "matplotlib/pyplot.py",
                 "*.py",
                 "*.py",
                 "*.py"
@@ -84,8 +85,8 @@
             "subDir": "Library",
             "dependencies": []
         },
-        "*.py": {
-            "name": "*",
+        "json.py": {
+            "name": "json",
             "type": "missing",
             "link": "",
             "parentDir": "",
@@ -100,16 +101,8 @@
             "subDir": "",
             "dependencies": []
         },
-        "random.py": {
-            "name": "random",
-            "type": "missing",
-            "link": "",
-            "parentDir": "",
-            "subDir": "",
-            "dependencies": []
-        },
-        "streamlit.py": {
-            "name": "streamlit",
+        "*.py": {
+            "name": "*",
             "type": "missing",
             "link": "",
             "parentDir": "",
@@ -124,8 +117,24 @@
             "subDir": "",
             "dependencies": []
         },
-        "json.py": {
-            "name": "json",
+        "random.py": {
+            "name": "random",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "matplotlib/pyplot.py": {
+            "name": "pyplot",
+            "type": "inbuilt",
+            "link": "",
+            "parentDir": "E:/Github Codes and Projects/Projects/PandemicForecasting",
+            "subDir": "matplotlib",
+            "dependencies": []
+        },
+        "streamlit.py": {
+            "name": "streamlit",
             "type": "missing",
             "link": "",
             "parentDir": "",

@@ -213,6 +213,17 @@ def UI_SimulatorParams():
 
     return SimulatorParams
 
+def UI_VisualiseHistory(HISTORY, DISEASE, LOCATIONS, CONNECTIONS, SIMULATOR_PARAMS):
+    st.markdown("## Visualise History")
+    VIS_DATA = VisualiseHistory_Simple(HISTORY, DISEASE, LOCATIONS, CONNECTIONS, SIMULATOR_PARAMS)
+    # Plots
+    st.markdown("### Plots")
+    for k in VIS_DATA["figs"].keys():
+        st.markdown("#### " + k)
+        for fig_k in VIS_DATA["figs"][k].keys():
+            st.markdown(fig_k)
+            st.plotly_chart(VIS_DATA["figs"][k][fig_k])
+
 # Repo Based Functions
 def disease_spread_simulator():
     # Title
@@ -231,14 +242,18 @@ def disease_spread_simulator():
         # Create Simulator
         SIMULATOR = Simulator(DISEASE, LOCATIONS, CONNECTIONS, **SIMULATOR_PARAMS)
         # Run Simulation
+        HISTORY = []
         progressObj = st.progress(0.0)
         for i in range(SIMULATOR_PARAMS["max_days"]):
             # Run
-            SIMULATOR.nextDay()
+            StepHistory = SIMULATOR.nextDay()
+            HISTORY.append(StepHistory)
             # Update Progress
-            progressObj.progress(i / SIMULATOR_PARAMS["max_days"])
+            progressObj.progress((i+1) / SIMULATOR_PARAMS["max_days"])
         # Display Outputs
-
+        st.markdown("## Simulation Output")
+        # st.write(HISTORY)
+        UI_VisualiseHistory(HISTORY, DISEASE, LOCATIONS, CONNECTIONS, SIMULATOR_PARAMS)
     
 #############################################################################################################################
 # Driver Code

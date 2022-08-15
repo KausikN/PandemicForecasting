@@ -1,8 +1,9 @@
 {
     "repo_name": "PandemicForecasting",
     "requirements": [
-        "numpy",
         "streamlit",
-        "opencv-python-headless"
+        "opencv-python-headless",
+        "matplotlib",
+        "numpy"
     ]
 }
