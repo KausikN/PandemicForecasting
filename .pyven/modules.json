@@ -85,14 +85,6 @@
             "subDir": "Library",
             "dependencies": []
         },
-        "json.py": {
-            "name": "json",
-            "type": "missing",
-            "link": "",
-            "parentDir": "",
-            "subDir": "",
-            "dependencies": []
-        },
         "os.py": {
             "name": "os",
             "type": "missing",
@@ -101,16 +93,8 @@
             "subDir": "",
             "dependencies": []
         },
-        "*.py": {
-            "name": "*",
-            "type": "missing",
-            "link": "",
-            "parentDir": "",
-            "subDir": "",
-            "dependencies": []
-        },
-        "numpy.py": {
-            "name": "numpy",
+        "streamlit.py": {
+            "name": "streamlit",
             "type": "missing",
             "link": "",
             "parentDir": "",
@@ -125,6 +109,22 @@
             "subDir": "",
             "dependencies": []
         },
+        "numpy.py": {
+            "name": "numpy",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
+        "*.py": {
+            "name": "*",
+            "type": "missing",
+            "link": "",
+            "parentDir": "",
+            "subDir": "",
+            "dependencies": []
+        },
         "matplotlib/pyplot.py": {
             "name": "pyplot",
             "type": "inbuilt",
@@ -133,8 +133,8 @@
             "subDir": "matplotlib",
             "dependencies": []
         },
-        "streamlit.py": {
-            "name": "streamlit",
+        "json.py": {
+            "name": "json",
             "type": "missing",
             "link": "",
             "parentDir": "",

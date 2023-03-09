@@ -40,48 +40,57 @@ def HomePage():
 
 #############################################################################################################################
 # Repo Based Vars
-CACHE_PATH = "StreamLitGUI/CacheData/Cache.json"
 PATHS = {
+    "cache": "StreamLitGUI/CacheData/Cache.json",
     "temp": "StreamLitGUI/TempData/",
-    "default_json_disease": "Simulations/Test/Disease.json",
-    "default_json_locations": "Simulations/Test/Locations.json",
-    "default_json_connections": "Simulations/Test/Connections.json"
+    "default": {
+        "disease": "Simulations/Test/Disease.json",
+        "locations": "Simulations/Test/Locations.json",
+        "connections": "Simulations/Test/Connections.json"
+    }
 }
 
 # Util Vars
 CACHE = {}
+SETTINGS = {
+    "interactive_plots": False
+}
 
 # Util Functions
 def LoadCache():
     global CACHE
-    CACHE = json.load(open(CACHE_PATH, "r"))
+    CACHE = json.load(open(PATHS["cache"], "r"))
 
 def SaveCache():
     global CACHE
-    json.dump(CACHE, open(CACHE_PATH, "w"), indent=4)
+    json.dump(CACHE, open(PATHS["cache"], "w"), indent=4)
 
 # Main Functions
 
 
 # UI Functions
 def UI_Disease():
+    '''
+    UI - Disease
+    '''
     st.markdown("## Disease Parameters")
     USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Disease JSON", "Create New Disease"])
     if USERINPUT_LoadMode == "Load Disease JSON":
         DiseaseData = st.file_uploader("Upload Disease JSON", type=["json"])
         if DiseaseData is None:
-            DiseaseData = open(PATHS["default_json_disease"], "rb")
+            DiseaseData = open(PATHS["default"]["disease"], "rb")
         DiseaseData = json.load(DiseaseData)
         DiseaseData["params"]["spread_mode"]["spread_func"] = SPREADMODE_FUNCS[DiseaseData["params"]["spread_mode"]["spread_func"]]["func"]
     else:
-        DiseaseData = json.load(open(PATHS["default_json_disease"], "rb"))
+        DiseaseData = json.load(open(PATHS["default"]["disease"], "rb"))
         # Name
         DiseaseData["name"] = st.text_input("Disease Name", DiseaseData["name"])
-        # Disease Params
+        # Disease Params (without spread mode)
+        DiseaseData["params"].pop("spread_mode")
         USERINPUT_DiseaseParams_str = st.text_area(
             "Disease Parameters", 
             json.dumps(DiseaseData["params"], indent=8), 
-            height=100
+            height=250
         )
         DiseaseData["params"] = json.loads(USERINPUT_DiseaseParams_str)
         # Spread Mode
@@ -111,15 +120,18 @@ def UI_Disease():
     return DISEASE
 
 def UI_Locations():
+    '''
+    UI - Locations
+    '''
     st.markdown("## Locations")
     USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Locations JSON", "Create New Locations"])
     if USERINPUT_LoadMode == "Load Locations JSON":
         LocationsData = st.file_uploader("Upload Locations JSON", type=["json"])
         if LocationsData is None:
-            LocationsData = open(PATHS["default_json_locations"], "rb")
+            LocationsData = open(PATHS["default"]["locations"], "rb")
         LocationsData = json.load(LocationsData)
     else:
-        LocationsData = json.load(open(PATHS["default_json_locations"], "rb"))
+        LocationsData = json.load(open(PATHS["default"]["locations"], "rb"))
         USERINPUT_Locations_str = st.text_area(
             "Locations", 
             json.dumps(LocationsData, indent=8), 
@@ -172,15 +184,18 @@ def UI_Locations():
     return LOCATIONS
 
 def UI_Connections():
+    '''
+    UI - Connections
+    '''
     st.markdown("## Connections")
     USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Connections JSON", "Create New Connections"])
     if USERINPUT_LoadMode == "Load Connections JSON":
         ConnectionsData = st.file_uploader("Upload Connections JSON", type=["json"])
         if ConnectionsData is None:
-            ConnectionsData = open(PATHS["default_json_connections"], "rb")
+            ConnectionsData = open(PATHS["default"]["connections"], "rb")
         ConnectionsData = json.load(ConnectionsData)
     else:
-        ConnectionsData = json.load(open(PATHS["default_json_connections"], "rb"))
+        ConnectionsData = json.load(open(PATHS["default"]["connections"], "rb"))
         USERINPUT_Connections_str = st.text_area(
             "Connections", 
             json.dumps(ConnectionsData, indent=8), 
@@ -206,6 +221,9 @@ def UI_Connections():
     return CONNECTIONS
 
 def UI_SimulatorParams():
+    '''
+    UI - Simulator Params
+    '''
     st.markdown("## Simulator Params")
     SimulatorParams = {
         "max_days": st.number_input("N Simulation Steps", min_value=1, value=1)
@@ -214,15 +232,21 @@ def UI_SimulatorParams():
     return SimulatorParams
 
 def UI_VisualiseHistory(HISTORY, DISEASE, LOCATIONS, CONNECTIONS, SIMULATOR_PARAMS):
+    '''
+    UI - Visualise History
+    '''
     st.markdown("## Visualise History")
     VIS_DATA = VisualiseHistory_Simple(HISTORY, DISEASE, LOCATIONS, CONNECTIONS, SIMULATOR_PARAMS)
+    # Check Interactive
+    PLOT_FUNC = st.pyplot
+    if SETTINGS["interactive_plots"]: PLOT_FUNC = st.plotly_chart
     # Plots
     st.markdown("### Plots")
     for k in VIS_DATA["figs"].keys():
         st.markdown("#### " + k)
         for fig_k in VIS_DATA["figs"][k].keys():
             st.markdown(fig_k)
-            st.plotly_chart(VIS_DATA["figs"][k][fig_k])
+            PLOT_FUNC(VIS_DATA["figs"][k][fig_k])
 
 # Repo Based Functions
 def disease_spread_simulator():
@@ -258,4 +282,7 @@ def disease_spread_simulator():
 #############################################################################################################################
 # Driver Code
 if __name__ == "__main__":
+    # Settings
+    SETTINGS["plots_interactive"] = st.sidebar.checkbox("Interactive Plots", value=False)
+    # Run App
     main()
