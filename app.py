@@ -42,11 +42,15 @@ def HomePage():
 # Repo Based Vars
 PATHS = {
     "cache": "StreamLitGUI/CacheData/Cache.json",
-    "temp": "StreamLitGUI/TempData/",
     "default": {
         "disease": "Simulations/Test/Disease.json",
         "locations": "Simulations/Test/Locations.json",
         "connections": "Simulations/Test/Connections.json"
+    },
+    "temp": {
+        "disease": "StreamLitGUI/TempData/Disease.json",
+        "locations": "StreamLitGUI/TempData/Locations.json",
+        "connections": "StreamLitGUI/TempData/Connections.json"
     }
 }
 
@@ -69,44 +73,70 @@ def SaveCache():
 
 
 # UI Functions
+## Disease
+def UI_LoadDiseaseParams(DefaultParams):
+    '''
+    UI - Load Disease Params
+    '''
+    # Init
+    DefaultParams = DefaultParams.copy()
+    # Name
+    DefaultParams["name"] = st.text_input("Disease Name", DefaultParams["name"])
+    # Disease Params (without spread mode)
+    DiseaseParams_WithoutSpreadMode = {k: DefaultParams["params"][k] for k in DefaultParams["params"].keys() if k not in ["spread_mode"]}
+    USERINPUT_DiseaseParams_str = st.text_area(
+        "Disease Parameters", 
+        json.dumps(DiseaseParams_WithoutSpreadMode, indent=8), 
+        height=250
+    )
+    DefaultParams["params"] = json.loads(USERINPUT_DiseaseParams_str)
+    # Spread Mode
+    DefaultParams["params"]["spread_mode"] = {}
+    cols = st.columns((1, 3))
+    USERINPUT_SpreadFunc = cols[0].selectbox("Spread Function", list(SPREADMODE_FUNCS.keys()))
+    DefaultParams["params"]["spread_mode"]["spread_func"] = USERINPUT_SpreadFunc
+    USERINPUT_SpreadFuncParams_str = cols[1].text_area(
+        "Spread Function Parameters", 
+        json.dumps(SPREADMODE_FUNCS[USERINPUT_SpreadFunc]["params"], indent=8), 
+        height=200
+    )
+    DefaultParams["params"]["spread_mode"]["spread_params"] = json.loads(USERINPUT_SpreadFuncParams_str)
+
+    return DefaultParams
+
 def UI_Disease():
     '''
     UI - Disease
     '''
-    st.markdown("## Disease Parameters")
-    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Disease JSON", "Create New Disease"])
+    st.markdown("## Disease")
+    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Disease", "Edit Disease", "Load Disease JSON"])
     if USERINPUT_LoadMode == "Load Disease JSON":
         DiseaseData = st.file_uploader("Upload Disease JSON", type=["json"])
-        if DiseaseData is None:
-            DiseaseData = open(PATHS["default"]["disease"], "rb")
+        if DiseaseData is None: DiseaseData = open(PATHS["default"]["disease"], "rb")
         DiseaseData = json.load(DiseaseData)
         DiseaseData["params"]["spread_mode"]["spread_func"] = SPREADMODE_FUNCS[DiseaseData["params"]["spread_mode"]["spread_func"]]["func"]
-    else:
+    elif USERINPUT_LoadMode == "Load Disease":
         DiseaseData = json.load(open(PATHS["default"]["disease"], "rb"))
-        # Name
-        DiseaseData["name"] = st.text_input("Disease Name", DiseaseData["name"])
-        # Disease Params (without spread mode)
-        DiseaseData["params"].pop("spread_mode")
-        USERINPUT_DiseaseParams_str = st.text_area(
-            "Disease Parameters", 
-            json.dumps(DiseaseData["params"], indent=8), 
-            height=250
-        )
-        DiseaseData["params"] = json.loads(USERINPUT_DiseaseParams_str)
-        # Spread Mode
-        DiseaseData["params"]["spread_mode"] = {}
-        cols = st.columns((1, 3))
-        USERINPUT_SpreadFunc = cols[0].selectbox("Spread Function", list(SPREADMODE_FUNCS.keys()))
-        DiseaseData["params"]["spread_mode"]["spread_func"] = SPREADMODE_FUNCS[USERINPUT_SpreadFunc]["func"]
-        USERINPUT_SpreadFuncParams_str = cols[1].text_area(
-            "Spread Function Parameters", 
-            json.dumps(SPREADMODE_FUNCS[USERINPUT_SpreadFunc]["params"], indent=8), 
-            height=200
-        )
-        DiseaseData["params"]["spread_mode"]["spread_params"] = json.loads(USERINPUT_SpreadFuncParams_str)
+    else:
+        ## Load Disease Data
+        if not os.path.exists(PATHS["temp"]["disease"]): DiseaseData = json.load(open(PATHS["default"]["disease"], "rb"))
+        else: DiseaseData = json.load(open(PATHS["temp"]["disease"], "rb"))
+        USERINPUT_Op = st.selectbox("Operation", ["Edit", "Reload"])
+        if USERINPUT_Op == "Edit":
+            DiseaseParams = UI_LoadDiseaseParams(DiseaseData)
+            if st.button("Edit"): DiseaseData = DiseaseParams
+        elif USERINPUT_Op == "Reload":
+            if st.button("Reload"): DiseaseData = json.load(open(PATHS["default"]["disease"], "rb"))
+        ## Save
+        json.dump(DiseaseData, open(PATHS["temp"]["disease"], "w"), indent=4)
+        ## Refresh
+        st.button("Refresh")
+        
     # Display Disease Data
     st.markdown("Final Disease Parameters")
     st.write(DiseaseData)
+    # Load as funcs
+    DiseaseData["params"]["spread_mode"]["spread_func"] = SPREADMODE_FUNCS[DiseaseData["params"]["spread_mode"]["spread_func"]]["func"]
     # Form Classes
     SPREAD_MODE = SpreadMode(**DiseaseData["params"]["spread_mode"])
     disease_params = {
@@ -119,25 +149,111 @@ def UI_Disease():
 
     return DISEASE
 
+## Locations
+def UI_LoadLocationParams(DefaultParams):
+    '''
+    UI - Load Location Params
+    '''
+    # Init
+    DefaultParams = DefaultParams.copy()
+    # Name
+    DefaultParams["name"] = st.text_input("Location Name", DefaultParams["name"])
+    # Params
+    cols = st.columns(2)
+    ## Geographical Params
+    Params_Geo = {k: DefaultParams["params"][k] for k in ["center_point", "params_area"]}
+    USERINPUT_GeoParams = json.loads(cols[0].text_area(
+        "Geographical Parameters", 
+        json.dumps(Params_Geo, indent=4), 
+        height=200
+    ))
+    DefaultParams["params"].update(USERINPUT_GeoParams)
+    ## Population Params
+    Params_Pop = DefaultParams["params"]["params_population"]["population"]
+    USERINPUT_PopParams = json.loads(cols[1].text_area(
+        "Population Parameters", 
+        json.dumps(Params_Pop, indent=4), 
+        height=200
+    ))
+    DefaultParams["params"]["params_population"]["population"].update(USERINPUT_PopParams)
+    ### Rates
+    cols = st.columns(3)
+    USERINPUT_PopRateParams = {
+        "birth_rate": cols[0].number_input("Birth Rate", 0.0, 1.0, DefaultParams["params"]["params_population"]["birth_rate"]),
+        "death_rate": cols[1].number_input("Death Rate", 0.0, 1.0, DefaultParams["params"]["params_population"]["death_rate"]),
+        "hospital_admittance_rate": cols[2].number_input("Hospital Admittance Rate", 0.0, 1.0, DefaultParams["params"]["params_population"]["hospital_admittance_rate"])
+    }
+    DefaultParams["params"]["params_population"].update(USERINPUT_PopRateParams)
+    ## Medical Params
+    cols = st.columns((1, 3))
+    ### Admit Order
+    DefaultParams["params"]["params_medical"]["hospitals_admit_order_func"] = cols[0].selectbox(
+        "Hospital Admittance Order", list(HOSPITAL_ADMIT_ORDER_FUNCS.keys())
+    )
+    ### Hospitals
+    Params_Hospitals = DefaultParams["params"]["params_medical"]["hospitals"]
+    USERINPUT_HospitalsParams = json.loads(cols[1].text_area(
+        "Hospitals Parameters", 
+        json.dumps(Params_Hospitals, indent=4), 
+        height=200
+    ))
+    DefaultParams["params"]["params_medical"]["hospitals"] = USERINPUT_HospitalsParams
+    ## Other Params
+    Params_Other = DefaultParams["params"]["params_other"]
+    USERINPUT_OtherParams = json.loads(st.text_area(
+        "Other Parameters", 
+        json.dumps(Params_Other, indent=4), 
+        height=25
+    ))
+    DefaultParams["params"]["params_other"].update(USERINPUT_OtherParams)
+
+    return DefaultParams
+
 def UI_Locations():
     '''
     UI - Locations
     '''
     st.markdown("## Locations")
-    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Locations JSON", "Create New Locations"])
+    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Locations", "Edit Locations", "Load Locations JSON"])
     if USERINPUT_LoadMode == "Load Locations JSON":
         LocationsData = st.file_uploader("Upload Locations JSON", type=["json"])
-        if LocationsData is None:
-            LocationsData = open(PATHS["default"]["locations"], "rb")
+        if LocationsData is None: LocationsData = open(PATHS["default"]["locations"], "rb")
         LocationsData = json.load(LocationsData)
+    elif USERINPUT_LoadMode == "Load Locations":
+        LocationsData = json.load(open(PATHS["temp"]["locations"], "rb"))
     else:
-        LocationsData = json.load(open(PATHS["default"]["locations"], "rb"))
-        USERINPUT_Locations_str = st.text_area(
-            "Locations", 
-            json.dumps(LocationsData, indent=8), 
-            height=500
-        )
-        LocationsData = json.loads(USERINPUT_Locations_str)
+        ## Load Locations Data
+        if not os.path.exists(PATHS["temp"]["locations"]): LocationsData = json.load(open(PATHS["default"]["locations"], "rb"))
+        else: LocationsData = json.load(open(PATHS["temp"]["locations"], "rb"))
+        ## Old Load - Simple JSON
+        # USERINPUT_Locations_str = st.text_area(
+        #     "Locations", 
+        #     json.dumps(LocationsData, indent=8), 
+        #     height=500
+        # )
+        # LocationsData = json.loads(USERINPUT_Locations_str)
+        ## New Load - UI
+        USERINPUT_Op = st.selectbox("Operation", ["Add", "Edit", "Clear", "Reload"])
+        if USERINPUT_Op == "Add":
+            LocParams = UI_LoadLocationParams(LocationsData["locations"][0])
+            if st.button("Add"): LocationsData["locations"].append(LocParams)
+        elif USERINPUT_Op == "Edit":
+            LocNames = [loc["name"] for loc in LocationsData["locations"]]
+            USERINPUT_LocName = st.selectbox("Select Location", LocNames)
+            USERINPUT_LocIndex = LocNames.index(USERINPUT_LocName)
+            LocParams = UI_LoadLocationParams(LocationsData["locations"][USERINPUT_LocIndex])
+            cols = st.columns(2)
+            if cols[0].button("Edit"): LocationsData["locations"][USERINPUT_LocIndex] = LocParams
+            if cols[1].button("Delete"): LocationsData["locations"].pop(USERINPUT_LocIndex)
+        elif USERINPUT_Op == "Clear":
+            if st.button("Clear"): LocationsData["locations"] = []
+        elif USERINPUT_Op == "Reload":
+            if st.button("Reload"): LocationsData = json.load(open(PATHS["default"]["locations"], "rb"))
+        ## Save
+        json.dump(LocationsData, open(PATHS["temp"]["locations"], "w"), indent=4)
+        ## Refresh
+        st.button("Refresh")
+            
     # Display Locations Data
     st.markdown("Final Locations")
     st.write(LocationsData)
@@ -183,25 +299,75 @@ def UI_Locations():
 
     return LOCATIONS
 
-def UI_Connections():
+## Connections
+def UI_LoadConnectionParams(DefaultParams, LocNames=[]):
+    '''
+    UI - Load Connection Params
+    '''
+    # Init
+    DefaultParams = DefaultParams.copy()
+    LocNames = LocNames.copy()
+    # Locations
+    cols = st.columns(2)
+    DefaultParams["loc_1"] = cols[0].selectbox("Start Location", LocNames)
+    DefaultParams["loc_2"] = cols[1].selectbox("End Location", LocNames)
+    # Params
+    ## Rates
+    Params_Rates = {
+        "travel_rate": st.number_input("Travel Rate", 0.0, 1.0, DefaultParams["travel_rate"])
+    }
+    DefaultParams.update(Params_Rates)
+    ## Connection Type
+    DefaultParams["params"]["connect_type"] = st.selectbox("Connection Type", CONNECTION_TYPES)
+
+    return DefaultParams
+
+def UI_Connections(LOCATIONS):
     '''
     UI - Connections
     '''
     st.markdown("## Connections")
-    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Connections JSON", "Create New Connections"])
+    USERINPUT_LoadMode = st.selectbox("Load Mode", ["Load Connections", "Edit Connections", "Load Connections JSON"])
     if USERINPUT_LoadMode == "Load Connections JSON":
         ConnectionsData = st.file_uploader("Upload Connections JSON", type=["json"])
-        if ConnectionsData is None:
-            ConnectionsData = open(PATHS["default"]["connections"], "rb")
+        if ConnectionsData is None: ConnectionsData = open(PATHS["default"]["connections"], "rb")
         ConnectionsData = json.load(ConnectionsData)
+    elif USERINPUT_LoadMode == "Load Connections":
+        ConnectionsData = json.load(open(PATHS["temp"]["connections"], "rb"))
     else:
-        ConnectionsData = json.load(open(PATHS["default"]["connections"], "rb"))
-        USERINPUT_Connections_str = st.text_area(
-            "Connections", 
-            json.dumps(ConnectionsData, indent=8), 
-            height=500
-        )
-        ConnectionsData = json.loads(USERINPUT_Connections_str)
+        ## Load Connections Data
+        if not os.path.exists(PATHS["temp"]["connections"]): ConnectionsData = json.load(open(PATHS["default"]["connections"], "rb"))
+        else: ConnectionsData = json.load(open(PATHS["temp"]["connections"], "rb"))
+        ## Old Load - Simple JSON
+        # USERINPUT_Connections_str = st.text_area(
+        #     "Connections", 
+        #     json.dumps(ConnectionsData, indent=8), 
+        #     height=500
+        # )
+        # ConnectionsData = json.loads(USERINPUT_Connections_str)
+        ## New Load - UI
+        LocNames = [loc.name for loc in LOCATIONS]
+        USERINPUT_Op = st.selectbox("Operation", ["Add", "Edit", "Clear", "Reload"])
+        if USERINPUT_Op == "Add":
+            ConnParams = UI_LoadConnectionParams(ConnectionsData["connections"][0], LocNames)
+            if st.button("Add"): ConnectionsData["connections"].append(ConnParams)
+        elif USERINPUT_Op == "Edit":
+            ConnNames = [conn["loc_1"] + " - " + conn["loc_2"] for conn in ConnectionsData["connections"]]
+            USERINPUT_ConnName = st.selectbox("Select Connection", ConnNames)
+            USERINPUT_ConnIndex = ConnNames.index(USERINPUT_ConnName)
+            ConnParams = UI_LoadConnectionParams(ConnectionsData["connections"][USERINPUT_ConnIndex], LocNames)
+            cols = st.columns(2)
+            if cols[0].button("Edit"): ConnectionsData["connections"][USERINPUT_ConnIndex] = ConnParams
+            if cols[1].button("Delete"): ConnectionsData["connections"].pop(USERINPUT_ConnIndex)
+        elif USERINPUT_Op == "Clear":
+            if st.button("Clear"): ConnectionsData["connections"] = []
+        elif USERINPUT_Op == "Reload":
+            if st.button("Reload"): ConnectionsData = json.load(open(PATHS["default"]["connections"], "rb"))
+        ## Save
+        json.dump(ConnectionsData, open(PATHS["temp"]["connections"], "w"), indent=4)
+        ## Refresh
+        st.button("Refresh")
+
     # Display Connections Data
     st.markdown("Final Connections")
     st.write(ConnectionsData)
@@ -258,7 +424,7 @@ def disease_spread_simulator():
     # Load Inputs
     DISEASE = UI_Disease()
     LOCATIONS = UI_Locations()
-    CONNECTIONS = UI_Connections()
+    CONNECTIONS = UI_Connections(LOCATIONS)
     SIMULATOR_PARAMS = UI_SimulatorParams()
 
     # Process Inputs

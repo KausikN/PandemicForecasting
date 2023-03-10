@@ -189,5 +189,10 @@ class Structure_Hospital:
 
 # Main Functions
 
-
 # Main Vars
+HOSPITAL_ADMIT_ORDER_FUNCS = {
+    "simple": Params_Medical.HospitalsAdmitOrder_Simple,
+    "random": Params_Medical.HospitalsAdmitOrder_Random,
+    "ascending_availability": Params_Medical.HospitalsAdmitOrder_AscendingAvailability,
+    "descending_availability": Params_Medical.HospitalsAdmitOrder_DescendingAvailability
+}

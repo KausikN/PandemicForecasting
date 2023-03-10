@@ -46,3 +46,8 @@ class Params_Connection:
 
 
 # Main Vars
+CONNECTION_TYPES = {
+    "water": None,
+    "air": None,
+    "land": None
+}
