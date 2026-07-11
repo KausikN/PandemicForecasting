@@ -5,5 +5,8 @@
         "PandemicForecasting.py",
         "Library/",
         "Simulations/"
-    ]
+    ],
+    "streamlit": {
+        "link": ""
+    }
 }
